@@ -1,28 +1,48 @@
-# UMX Tools V3 使用说明
+# umx-tools-v3
 
-`umx-tools-v3` 是交互式项目文档技能，默认把项目文档保存到**当前路径**。
+一个面向 **Vibe Coding 文档驱动开发** 的通用 Skills 工具。
 
-核心能力：
+目标：让用户只给出项目需求，就能在交互中快速选择合适的文档策略（传统文档、AI 文档、或最小单文件模式），并生成可直接用于 AI 开发落地的文档包。
 
-- 先问路线：`traditional-first` 或 `direct`
-- 推荐六大组合（`c1..c6`）
-- 支持文档模式：`single-file` / `minimal` / `standard` / `full`
-- 文档分离保存：`traditional-docs/` 与 `vibe-docs/`
-- Vibe 基座固定：Epic -> Feature/Story -> Spec + 里程碑
+## 核心能力
 
-## 1. 快速开始（默认当前路径）
+- 交互优先：先问路线，再生成文档，避免“直接开写导致跑偏”
+- 双路线支持：
+  - `traditional-first`：先传统文档（PRD/架构/API/数据库）
+  - `direct`：直接进入 Vibe 文档（推荐组合 + 模式）
+- 六种组合（`c1..c6`）+ 自动推荐（`auto`）
+- 四种模式：`single-file` / `minimal` / `standard` / `full`
+- Vibe 文档基座固定：`Epic -> Feature/Story -> Spec + Milestone`
+- 输出目录扁平：默认两层结构，便于项目集成
 
-建议先创建项目内目录：
+## 目录结构
+
+```text
+umx-tools-v3/
+  SKILL.md
+  agents/
+  assets/
+  references/
+  scripts/
+  README.md
+```
+
+## 快速开始
+
+### 1) 准备输入文件
 
 ```bash
 mkdir -p ./umx-inputs ./umx-output
+cp assets/requirements.template.json ./umx-inputs/requirements.json
 ```
 
-### 1.1 先进入交互提问
+按你的项目填写 `./umx-inputs/requirements.json`。
+
+### 2) 先走交互入口（推荐）
 
 ```bash
-bash aiskills/umx-tools-v3/scripts/safe_run_umx_flow.sh \
-  aiskills/umx-tools-v3/assets/requirements.example.json \
+bash scripts/safe_run_umx_flow.sh \
+  ./umx-inputs/requirements.json \
   ./umx-output \
   ask \
   auto \
@@ -30,94 +50,92 @@ bash aiskills/umx-tools-v3/scripts/safe_run_umx_flow.sh \
   prd,architecture,api,database
 ```
 
-### 1.2 直接路线（推荐）
+### 3) 直接接受推荐快速生成
 
 ```bash
-bash aiskills/umx-tools-v3/scripts/safe_run_umx_flow.sh \
-  aiskills/umx-tools-v3/assets/requirements.example.json \
+bash scripts/safe_accept_recommend.sh \
+  ./umx-inputs/requirements.json \
+  ./umx-output
+```
+
+## 常用命令
+
+### 直接路线（MVP 常用）
+
+```bash
+bash scripts/safe_run_umx_flow.sh \
+  ./umx-inputs/requirements.json \
   ./umx-output \
   direct \
   auto \
   single-file
 ```
 
-### 1.3 接受推荐快捷入口
+### 传统优先路线
 
 ```bash
-bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh \
-  ./umx-inputs/ums-sso-requirements.json \
-  ./umx-output
+bash scripts/safe_run_umx_flow.sh \
+  ./umx-inputs/requirements.json \
+  ./umx-output \
+  traditional-first \
+  auto \
+  minimal \
+  prd,architecture,api,database
 ```
 
-## 2. 路线说明
-
-- `traditional-first`：先生成 PRD/架构/API/数据库，再生成 Vibe 文档
-- `direct`：直接组合选型后生成 Vibe 文档
-
-## 3. 参数说明
-
-`scripts/safe_run_umx_flow.sh` 参数顺序：
-
-1. requirements.json 路径
-2. 输出目录（默认 `./umx-output`）
-3. 路线：`ask | traditional-first | direct`
-4. 组合：`auto | c1..c6`
-5. 模式：`single-file | minimal | standard | full`
-6. 传统文档集合：`prd,architecture,api,database`
-7. 指令模式（可选）
-
-## 4. 指令模式
+### 指令模式（给 CLI/Agent）
 
 ```bash
-python3 aiskills/umx-tools-v3/scripts/run_umx_flow.py \
-  --input ./umx-inputs/ums-sso-requirements.json \
+python3 scripts/run_umx_flow.py \
+  --input ./umx-inputs/requirements.json \
   --output ./umx-output \
   --path ask \
   --command '/umx direct --combo auto --mode single-file'
 ```
 
-常见指令：
+支持指令：
 
 - `/umx start`
 - `/umx traditional --docs prd,architecture,api,database --combo auto --mode minimal`
 - `/umx direct --combo auto --mode single-file`
 - `/umx accept`
-- `接受推荐` / `确认` / `接受`
+- `接受推荐` / `确认` / `开始生成`
 
-## 5. 输出结构
+## 输出结构（默认）
 
 ```text
-./umx-output/
+umx-output/
   route-summary.md
-  traditional-docs/   # 仅 traditional-first 路线
+  traditional-docs/      # 仅 traditional-first 路线生成
   vibe-docs/
     ...
 ```
 
-## 6. 为什么会出现前后不一致
+说明：默认写入当前路径 `./umx-output`。仅当当前路径不可写时，脚本会自动回退到 `/tmp/umx-tools-v3/umx-output`。
 
-常见原因：
+## 在 Claude Code CLI 中使用
 
-1. 没走脚本入口，模型直接写文件。
-2. requirements 写入失败后复用了旧文件。
-
-解决方式：
-
-- 只用脚本入口，不手写文件。
-- requirements 放到 `./umx-inputs/`，每次确认前先更新。
-- 若你必须用 `/tmp`，建议路径固定为 `/tmp/umx-tools-v3/inputs/`。
-
-## 7. fallback 说明
-
-默认输出到当前路径 `./umx-output`。若当前路径不可写，脚本才会自动回退到：
-
-- `/tmp/umx-tools-v3/umx-output`
-
-## 8. Claude Code CLI 对话模板
+把本目录放入 Skills 目录后即可调用（目录名建议保持 `umx-tools-v3`）：
 
 ```text
-不要直接写文档文件。
-请只执行：
-bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh ./umx-inputs/ums-sso-requirements.json ./umx-output
-执行后只汇报输出目录和文件清单。
+~/.claude/skills/umx-tools-v3
 ```
+
+在对话中建议这样触发：
+
+```text
+请使用 umx-tools-v3。
+先按交互流程确认路线（traditional-first 或 direct），
+再按推荐组合生成文档，默认 single-file 启动。
+```
+
+## 设计原则
+
+- 先选择策略，再生成文档
+- MVP 优先，避免过度设计
+- 文档可扩展：可从 `single-file` 平滑升级到 `minimal/standard/full`
+- 传统文档与 Vibe 文档职责分离，便于团队协作与 AI 执行
+
+## 许可证
+
+当前仓库尚未附带 License 文件。建议开源前补充 `LICENSE`（常见：MIT/Apache-2.0）。
