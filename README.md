@@ -67,17 +67,8 @@ bash scripts/safe_accept_recommend.sh \
 umx-output/
   route-summary.md
   vibe-docs/
-    00-single-file-pack.md
+    00-single-file-pack.md   # 含执行护栏：防幻觉/防上下文丢失/防 Bug 循环
 ```
-
-**截图位说明（开源展示建议）**
-
-- `docs/screenshots/01-user-requirement.png`：CLI 中的用户需求输入
-- `docs/screenshots/02-route-recommendation.png`：路线与组合推荐页面
-- `docs/screenshots/03-output-tree.png`：生成后的目录结构
-- `docs/screenshots/04-doc-preview.png`：核心文档内容预览
-
-> 建议在开源仓库补充上述截图，可让新用户在 30 秒内理解完整使用流程。
 
 ## 2. 项目介绍：两条路线 + 一个文档基座
 
@@ -168,6 +159,36 @@ python3 scripts/run_umx_flow.py \
 - `/umx direct --combo auto --mode single-file`
 - `/umx accept`
 - `接受推荐` / `确认` / `开始生成`
+
+### 5.5 输入质量闸门（建议保持开启）
+
+为减少后续 AI 编程幻觉与上下文漂移，生成前会校验 `requirements.json` 的关键字段：
+
+- `project_name`
+- `project_goal`
+- `target_users`
+
+若字段仍是占位文本（如 `待补充`、`<项目名称>`、`TODO`），会中止生成并提示修复。
+
+仅在草稿预演场景可绕过：
+
+```bash
+UMX_ALLOW_PLACEHOLDER=1 bash scripts/safe_accept_recommend.sh \
+  ./umx-inputs/requirements.json \
+  ./umx-output
+```
+
+或直接调用底层脚本：
+
+```bash
+python3 scripts/generate_doc_pack.py \
+  --input ./umx-inputs/requirements.json \
+  --output ./umx-output/vibe-docs \
+  --combo auto \
+  --mode single-file \
+  --flat \
+  --allow-placeholder
+```
 
 ## 6. 输出结构（默认两层）
 

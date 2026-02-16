@@ -34,3 +34,8 @@
 
 - 不要直接让模型逐个写文档文件。
 - 必须调用脚本落盘，否则容易触发 `Error writing file` 循环。
+
+## 输入质量闸门
+
+- 生成前会校验 `project_name/project_goal/target_users`，占位文本会被拒绝。
+- 仅草稿预演可临时放开：`UMX_ALLOW_PLACEHOLDER=1`。

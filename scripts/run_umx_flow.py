@@ -46,6 +46,7 @@ class FlowConfig:
     mode: str
     traditional_docs: List[str]
     print_only: bool
+    allow_placeholder: bool
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,6 +59,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", default="single-file", help="single-file|minimal|standard|full")
     parser.add_argument("--command", default="", help="Command mode input")
     parser.add_argument("--print-only", action="store_true", help="Plan only")
+    parser.add_argument("--allow-placeholder", action="store_true", help="Allow placeholder fields in requirements")
     return parser.parse_args()
 
 
@@ -289,19 +291,47 @@ def run_vibe_generator(config: FlowConfig) -> subprocess.CompletedProcess[str]:
     ]
     if config.print_only:
         cmd.append("--print-only")
+    if config.allow_placeholder:
+        cmd.append("--allow-placeholder")
 
-    return subprocess.run(cmd, check=True, text=True, capture_output=True)
+    try:
+        return subprocess.run(cmd, check=True, text=True, capture_output=True)
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or str(exc)).strip()
+        raise SystemExit(f"Vibe doc generation failed:\n{detail}") from None
 
 
-def write_route_summary(root: Path, config: FlowConfig, req: Dict[str, str]) -> None:
+def parse_vibe_stdout(stdout: str) -> Dict[str, str]:
+    result: Dict[str, str] = {}
+    for raw in stdout.splitlines():
+        line = raw.strip()
+        if line.startswith("Primary combo:"):
+            result["primary_combo"] = line.split(":", 1)[1].strip()
+        elif line.startswith("Secondary combo:"):
+            result["secondary_combo"] = line.split(":", 1)[1].strip()
+        elif line.startswith("Doc mode:"):
+            result["doc_mode"] = line.split(":", 1)[1].strip()
+        elif line.startswith("Complexity:"):
+            result["complexity"] = line.split(":", 1)[1].strip()
+    return result
+
+
+def write_route_summary(root: Path, config: FlowConfig, req: Dict[str, str], vibe_summary: Dict[str, str]) -> None:
+    selected_mode = vibe_summary.get("doc_mode", config.mode)
+    selected_primary = vibe_summary.get("primary_combo", config.combo)
+    selected_secondary = vibe_summary.get("secondary_combo", "无")
+    selected_complexity = vibe_summary.get("complexity", "未计算")
+
     write_file(
         root / "route-summary.md",
         f"""# Route Summary
 
 - 项目：{req['project_name']}
 - 路线：{config.path_choice}
-- 组合：{config.combo}
-- 模式：{config.mode}
+- 主组合：{selected_primary}
+- 副组合：{selected_secondary}
+- 模式：{selected_mode}
+- 复杂度：{selected_complexity}
 - 传统文档：{','.join(config.traditional_docs) if config.path_choice == 'traditional-first' else '无'}
 """,
     )
@@ -331,22 +361,31 @@ def main() -> None:
         return
 
     if overrides.get("recommend") == "1":
-        proc = subprocess.run(
-            [
-                "python3",
-                str(Path(__file__).resolve().parent / "generate_doc_pack.py"),
-                "--input",
-                str(input_path),
-                "--combo",
-                "auto",
-                "--mode",
-                mode,
-                "--print-only",
-            ],
-            check=True,
-            text=True,
-            capture_output=True,
-        )
+        cmd = [
+            "python3",
+            str(Path(__file__).resolve().parent / "generate_doc_pack.py"),
+            "--input",
+            str(input_path),
+            "--combo",
+            "auto",
+            "--mode",
+            mode,
+            "--print-only",
+        ]
+        if args.allow_placeholder:
+            cmd.append("--allow-placeholder")
+
+        try:
+            proc = subprocess.run(
+                cmd,
+                check=True,
+                text=True,
+                capture_output=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            detail = (exc.stderr or exc.stdout or str(exc)).strip()
+            raise SystemExit(f"Recommendation failed:\n{detail}") from None
+
         print(proc.stdout)
         return
 
@@ -370,6 +409,7 @@ def main() -> None:
         mode=mode,
         traditional_docs=docs,
         print_only=args.print_only,
+        allow_placeholder=args.allow_placeholder,
     )
 
     if args.print_only:
@@ -383,13 +423,13 @@ def main() -> None:
         print(vibe.stdout)
         return
 
-    write_route_summary(root, config, req)
-
     traditional_files: List[str] = []
     if config.path_choice == "traditional-first":
         traditional_files = write_traditional_docs(root / "traditional-docs", req, config.traditional_docs)
 
     vibe = run_vibe_generator(config)
+    vibe_summary = parse_vibe_stdout(vibe.stdout)
+    write_route_summary(root, config, req, vibe_summary)
 
     print(f"Generated root: {root}")
     print(f"Route: {config.path_choice}")

@@ -11,6 +11,7 @@ COMBO="${4:-auto}"
 MODE="${5:-single-file}"
 TRAD_DOCS="${6:-prd,architecture,api,database}"
 COMMAND_MODE="${7:-}"
+ALLOW_PLACEHOLDER="${UMX_ALLOW_PLACEHOLDER:-0}"
 
 if [[ ! -f "$INPUT_PATH" ]]; then
   echo "Input JSON not found: $INPUT_PATH" >&2
@@ -29,6 +30,10 @@ CMD=(
 
 if [[ -n "$COMMAND_MODE" ]]; then
   CMD+=(--command "$COMMAND_MODE")
+fi
+
+if [[ "$ALLOW_PLACEHOLDER" == "1" ]]; then
+  CMD+=(--allow-placeholder)
 fi
 
 "${CMD[@]}"

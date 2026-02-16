@@ -15,6 +15,7 @@ description: 交互式项目文档技能。用户先给需求，技能先询问�
 4. 使用 `safe_accept_recommend.sh`，启用输入文件旧版本保护，避免复用旧 requirements。
 5. 若 requirements 写入失败，不要继续生成，先让用户重新提供 requirements 文件路径。
 6. 默认输出到当前项目路径（`./umx-output`），仅在不可写时回退到 `/tmp/umx-tools-v3/umx-output`。
+7. 生成前必须通过输入质量闸门：`project_name/project_goal/target_users` 不能是占位文本；仅草稿场景才允许 `--allow-placeholder`。
 
 ## 1) 执行边界
 
@@ -62,7 +63,7 @@ description: 交互式项目文档技能。用户先给需求，技能先询问�
 优先使用流程脚本：
 
 ```bash
-bash aiskills/umx-tools-v3/scripts/safe_run_umx_flow.sh \
+bash <skill-dir>/scripts/safe_run_umx_flow.sh \
   <requirements.json> \
   ./umx-output \
   ask \
@@ -74,7 +75,7 @@ bash aiskills/umx-tools-v3/scripts/safe_run_umx_flow.sh \
 “接受推荐”快捷入口：
 
 ```bash
-bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh \
+bash <skill-dir>/scripts/safe_accept_recommend.sh \
   <requirements.json> \
   ./umx-output
 ```
@@ -85,6 +86,7 @@ bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh \
 - 第 4 位：`auto|c1..c6`
 - 第 5 位：`single-file|minimal|standard|full`
 - 第 6 位：传统文档集合
+- 环境变量：`UMX_ALLOW_PLACEHOLDER=1`（仅草稿预演时允许占位输入）
 
 ## 6) 指令模式（Command Mode）
 
@@ -106,4 +108,5 @@ bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh \
 - 组合结果：主组合 + 副组合
 - 模式：single-file/minimal/standard/full
 - 输出路径固定为：`./umx-output/traditional-docs/` 与 `./umx-output/vibe-docs/`
+- 执行护栏固定包含：范围边界、单一事实源、变更先回文档
 - 下一步建议：先从哪份文档开始执行

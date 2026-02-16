@@ -17,7 +17,7 @@
 
 ```bash
 mkdir -p ./umx-inputs ./umx-output
-bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh \
+bash <skill-dir>/scripts/safe_accept_recommend.sh \
   ./umx-inputs/ums-sso-requirements.json \
   ./umx-output
 ```
@@ -27,7 +27,7 @@ bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh \
 如果当前路径不可写，再使用：
 
 ```bash
-bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh \
+bash <skill-dir>/scripts/safe_accept_recommend.sh \
   /tmp/umx-tools-v3/inputs/ums-sso-requirements.json \
   /tmp/umx-tools-v3/umx-output
 ```
@@ -38,6 +38,14 @@ bash aiskills/umx-tools-v3/scripts/safe_accept_recommend.sh \
 
 - 修改阈值：`UMX_MAX_INPUT_AGE_SECONDS=1800`
 - 允许旧文件：`UMX_ALLOW_STALE_INPUT=1`
+
+## 关于输入质量闸门
+
+`generate_doc_pack.py` 默认会校验关键字段（项目名称/目标/目标用户）是否仍是占位文本。
+
+- 若提示 `Input quality check failed`：请先补全 `requirements.json`。
+- 仅草稿预演可使用：`UMX_ALLOW_PLACEHOLDER=1`（或底层参数 `--allow-placeholder`）。
+
 
 ## 结果校验
 

@@ -165,6 +165,48 @@ def load_requirements(path: Path) -> Dict[str, object]:
     }
 
 
+def find_requirement_quality_issues(req: Dict[str, object]) -> List[str]:
+    placeholder_hints = {
+        "待补充",
+        "todo",
+        "tbd",
+        "to be determined",
+        "new project",
+        "example",
+        "示例",
+        "unknown",
+        "未定",
+    }
+    required_fields = {
+        "project_name": "项目名称",
+        "project_goal": "项目目标",
+        "target_users": "目标用户",
+    }
+
+    issues: List[str] = []
+
+    for key, label in required_fields.items():
+        raw = str(req.get(key, "")).strip()
+        lowered = raw.lower()
+
+        if not raw:
+            issues.append(f"{label} 为空")
+            continue
+
+        if "<" in raw or ">" in raw:
+            issues.append(f"{label} 仍包含模板占位符")
+            continue
+
+        if any(token in lowered for token in placeholder_hints):
+            issues.append(f"{label} 仍是占位/示例文本：{raw}")
+            continue
+
+        if key == "project_goal" and len(raw) < 8:
+            issues.append("项目目标过短，建议写清业务结果与验收口径")
+
+    return issues
+
+
 def score_combos(req: Dict[str, object]) -> Dict[str, int]:
     team = int(req["team_size"])
     modules = int(req["module_count"])
@@ -420,6 +462,14 @@ def single_file_body(
 - 复杂度：{complexity}
 - 基座：Epic -> Feature/Story -> Core Spec
 
+## 0.1 执行护栏（防幻觉 / 防上下文丢失 / 防 Bug 循环）
+
+- 单一事实源：需求、范围、验收一律以本文件为准。
+- 禁止新增：未写在 M0 范围内的需求不得实现。
+- 小步提交：每次只改 1 个 Story，并回写变更原因。
+- 先对齐再编码：代码实现前先核对 Epic/Story/Spec 是否一致。
+- 失败先回文档：出现冲突或歧义时，先更新文档再继续实现。
+
 ## 1. 组合决策
 
 ### 选择理由
@@ -521,6 +571,16 @@ def single_file_body(
 - 版本治理与变更流程。
 
 ## 6. AI 执行 Prompt 包
+
+### Prompt 0：执行前一致性闸门
+
+```text
+在开始编码前，请先输出以下检查结果：
+1) 当前实现目标对应哪个 Epic 和 Story；
+2) 该 Story 的验收标准；
+3) 本次明确不做的内容（防范围膨胀）。
+若无法明确，请先提问，不得直接编码。
+```
 
 ### Prompt 1：实现 M0
 
@@ -668,7 +728,14 @@ def doc_body(
 - 上游异常：返回 E502，并记录 trace_id
 - 超时：返回 E504，并给出重试建议
 
-## 7. 验收清单
+## 7. 执行护栏
+
+- 单一事实源：本文件 + `00-epic-map.md` + `01-feature-story-map.md`
+- 禁止新增：未进入 M0 的需求不得进入代码实现
+- 变更先回写：接口/数据结构变更必须先改文档再改代码
+- 回归门禁：每次改动都要覆盖至少 1 条失败场景
+
+## 8. 验收清单
 
 - [ ] 主流程端到端通过
 - [ ] 错误场景可复现且可回归
@@ -719,6 +786,16 @@ def doc_body(
 
     if filename == "05-ai-prompt-pack.md":
         return """# AI 执行 Prompt 包
+
+## Prompt 0：执行前一致性闸门
+
+```text
+在开始编码前，请先输出以下检查结果：
+1) 本次实现对应的 Epic 与 Story 编号；
+2) 对应验收标准；
+3) 本次不做内容（明确范围边界）。
+若无法明确，请先提问，不得直接编码。
+```
 
 ## Prompt 1：实现 M0 主流程
 
@@ -1031,6 +1108,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--project-slug", default="", help="Optional output folder slug")
     parser.add_argument("--print-only", action="store_true", help="Only print plan without writing files")
     parser.add_argument("--flat", action="store_true", help="Write files directly into output root without an extra slug folder")
+    parser.add_argument("--allow-placeholder", action="store_true", help="Allow placeholder values in key requirement fields")
     return parser.parse_args()
 
 
@@ -1046,6 +1124,18 @@ def main() -> None:
         raise SystemExit(f"Invalid --mode: {mode_arg}")
 
     req = load_requirements(Path(args.input))
+
+    if not args.allow_placeholder:
+        quality_issues = find_requirement_quality_issues(req)
+        if quality_issues:
+            details = "\n".join(f"- {item}" for item in quality_issues)
+            raise SystemExit(
+                "Input quality check failed. Please complete concrete requirements before generating docs:\n"
+                f"{details}\n"
+                "Tip: this guardrail helps reduce hallucination/context-loss/bug-loop in follow-up AI coding. "
+                "Use --allow-placeholder only for temporary drafts."
+            )
+
     scores = score_combos(req)
     primary_code, secondary_code = select_combo(scores, combo_arg)
     complexity = complexity_level(req)
