@@ -44,6 +44,41 @@ cp -r ./umx-tools-v3 ~/.claude/skills/umx-tools-v3
 - 第三步：选择模式（`single-file|minimal|standard|full`）
 - 第四步：生成输出到 `./umx-output`
 
+### 1.4 首屏示例：从需求到文档包
+
+**示例输入（用户需求）**
+
+```text
+我想做一个轻量化 UMS+SSO，要求先从最小文档模式启动，
+避免 AI 编程出现幻觉和反复改 Bug。
+```
+
+**执行方式（推荐）**
+
+```bash
+bash scripts/safe_accept_recommend.sh \
+  ./umx-inputs/requirements.json \
+  ./umx-output
+```
+
+**预期输出（single-file）**
+
+```text
+umx-output/
+  route-summary.md
+  vibe-docs/
+    00-single-file-pack.md
+```
+
+**截图位说明（开源展示建议）**
+
+- `docs/screenshots/01-user-requirement.png`：CLI 中的用户需求输入
+- `docs/screenshots/02-route-recommendation.png`：路线与组合推荐页面
+- `docs/screenshots/03-output-tree.png`：生成后的目录结构
+- `docs/screenshots/04-doc-preview.png`：核心文档内容预览
+
+> 建议在开源仓库补充上述截图，可让新用户在 30 秒内理解完整使用流程。
+
 ## 2. 项目介绍：两条路线 + 一个文档基座
 
 无论走哪条路线，Vibe 文档始终使用统一基座：
