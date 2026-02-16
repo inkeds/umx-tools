@@ -1,0 +1,15 @@
+{
+  "project_name": "<项目名称>",
+  "project_goal": "<一句话目标>",
+  "target_users": "<目标用户>",
+  "team_size": 2,
+  "module_count": 3,
+  "ui_priority": "medium",
+  "backend_complexity": "medium",
+  "domain_complexity": "low",
+  "compliance_level": "low",
+  "design_source": "none",
+  "frontend_backend_separation": false,
+  "need_fast_validation": true,
+  "iteration_speed": "fast"
+}

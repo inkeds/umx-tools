@@ -1,0 +1,15 @@
+{
+  "project_name": "统一用户管理系统 UMS+SSO",
+  "project_goal": "为多个独立项目提供统一注册登录与授权接入能力",
+  "target_users": "个人开发者及其项目终端用户",
+  "team_size": 1,
+  "module_count": 4,
+  "ui_priority": "medium",
+  "backend_complexity": "high",
+  "domain_complexity": "medium",
+  "compliance_level": "medium",
+  "design_source": "wireframe",
+  "frontend_backend_separation": true,
+  "need_fast_validation": true,
+  "iteration_speed": "fast"
+}
