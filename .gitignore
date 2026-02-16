@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+.env.*
+
+# Logs and temp
+*.log
+*.tmp
+*.swp
+
+# Local generated inputs/outputs
+umx-inputs/
+umx-output/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Node (if local tooling is added)
+node_modules/
